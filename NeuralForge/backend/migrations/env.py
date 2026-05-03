@@ -58,8 +58,17 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    import config as app_config
+    # Override URL with the app's config to avoid needing alembic.ini edits,
+    # and handle sync vs async drivers. Since env.py run_migrations_online doesn't use async,
+    # we can use a sync sqlite url for generating migrations if we configured aiosqlite,
+    # but actually alembic supports async engines natively. Since this is just for generation:
+    url = app_config.settings.DATABASE_URL.replace('+asyncpg', '').replace('+aiosqlite', '')
+
+    cfg = config.get_section(config.config_ini_section, {})
+    cfg["sqlalchemy.url"] = url
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        cfg,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
