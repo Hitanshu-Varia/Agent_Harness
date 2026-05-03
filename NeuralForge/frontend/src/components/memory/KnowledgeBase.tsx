@@ -8,7 +8,7 @@ interface MemoryItem {
   id: string;
   content: string;
   source: string;
-  metadata: any;
+  metadata: unknown;
   timestamp: number;
   similarity?: number;
 }
@@ -137,7 +137,7 @@ export function KnowledgeBase({ projectId }: KnowledgeBaseProps) {
               <span className="absolute -left-1.5 top-1 h-3 w-3 rounded-full bg-blue-500 ring-4 ring-zinc-950" />
               <div className="flex flex-col">
                 <span className="text-xs font-semibold text-blue-400">
-                  {item.metadata?.agent_type || item.source}
+                  {(item.metadata as Record<string, unknown>)?.agent_type as string || item.source}
                 </span>
                 <span className="text-xs text-zinc-500 mb-1">
                   {new Date(item.timestamp * 1000).toLocaleString()}
