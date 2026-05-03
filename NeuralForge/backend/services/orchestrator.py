@@ -68,7 +68,7 @@ class CapacityReport:
         self.max_agents = max_agents
 
 class AgentOrchestrator:
-    def __init__(self, project_id: str, capacity_report: CapacityReport, api_manager: Any, memory_manager: Any, ws_manager: Any):
+    def __init__(self, project_id: str, capacity_report: 'CapacityReport', api_manager: Any, memory_manager: Any = None, ws_manager: Any = None):
         self.project_id = project_id
         self.capacity_report = capacity_report
         self.api_manager = api_manager
@@ -216,6 +216,20 @@ class AgentOrchestrator:
         dep_context = {dep: previous_results[dep].result for dep in subtask.depends_on if dep in previous_results}
         merged_context = {**context, **dep_context}
 
+        # Build memory context using MemoryManager
+        if self.memory_manager:
+            agent.memory_context = await self.memory_manager.build_memory_context(
+                project_id=self.project_id,
+                current_task=subtask.title,
+                agent_type=agent.agent_type
+            )
+            # Store working context that this task is starting
+            await self.memory_manager.set_working_context(
+                project_id=self.project_id,
+                key=f"task_{subtask.id}_status",
+                value="running"
+            )
+
         messages = agent_impl.build_messages(
             task=subtask.title,
             context=merged_context,
@@ -270,6 +284,17 @@ class AgentOrchestrator:
                 "task_id": subtask.id,
                 "status": "success"
             })
+
+            # Store result and episode in MemoryManager
+            if self.memory_manager:
+                await self.memory_manager.store_task_result(subtask.id, str(final_result))
+                await self.memory_manager.store_episode(
+                    project_id=self.project_id,
+                    content=full_output,
+                    agent_type=agent.agent_type,
+                    task_id=subtask.id,
+                    importance=0.8
+                )
 
             return TaskResult(task_id=subtask.id, status="success", result=final_result)
 
