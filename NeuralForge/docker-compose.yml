@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-neuralforge}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - neuralforge-net
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    networks:
+      - neuralforge-net
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  chromadb:
+    image: chromadb/chroma:latest
+    environment:
+      - ALLOW_RESET=true
+    volumes:
+      - chromadb_data:/chroma/chroma
+    networks:
+      - neuralforge-net
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/app
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - CHROMA_HOST=${CHROMA_HOST}
+      - CHROMA_PORT=${CHROMA_PORT}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=${ALGORITHM}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+    networks:
+      - neuralforge-net
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
+      - chromadb
+    command: uvicorn main:app --host 0.0.0.0 --port 8080 --reload
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL}
+    networks:
+      - neuralforge-net
+    ports:
+      - "3000:3000"
+    command: sh -c "npm install && npm run dev"
+
+networks:
+  neuralforge-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  chromadb_data:
