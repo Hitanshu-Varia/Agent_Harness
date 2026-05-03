@@ -15,3 +15,4 @@ psutil==5.9.8
 GPUtil==1.4.0
 py-cpuinfo==9.0.0
 alembic==1.13.1
+sentence-transformers
