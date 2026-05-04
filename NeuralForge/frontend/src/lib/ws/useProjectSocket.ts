@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useProjectStore } from '../../store/projectStore';
+import { useAgentStore } from '../../store/agentStore';
 
 export function useProjectSocket(projectId: string) {
     const [isConnected, setIsConnected] = useState(false);
@@ -12,6 +13,12 @@ export function useProjectSocket(projectId: string) {
 
     // Get store actions
     const handleSocketEvent = useProjectStore((state) => state.handleSocketEvent);
+
+    // Get agent store actions
+    const addAgent = useAgentStore((state) => state.addAgent);
+    const setAgentStatus = useAgentStore((state) => state.setAgentStatus);
+    const appendToken = useAgentStore((state) => state.appendToken);
+    const updateAgent = useAgentStore((state) => state.updateAgent);
 
     const connect = useCallback(() => {
         if (!projectId) return;
@@ -48,8 +55,43 @@ export function useProjectSocket(projectId: string) {
                 // Don't add pongs to state
                 if (data.type !== 'pong') {
                     setLastEvent(data);
-                    setEvents((prev) => [...prev, data]);
-                    handleSocketEvent(data);
+
+                    // Route events to agentStore where appropriate
+                    if (data.type === 'agent_spawned') {
+                        addAgent({
+                            id: data.agent.agent_id,
+                            name: data.agent.name,
+                            role: data.agent.agent_type,
+                            status: data.agent.status === 'pending' ? 'idle' : data.agent.status,
+                            provider: data.agent.assigned_model.includes('gpt') ? 'OpenRouter' : 'Ollama', // Simple heuristic for now
+                            model: data.agent.assigned_model,
+                            tokens: 0,
+                            startTime: Date.now(),
+                            outputLog: [],
+                            tokenHistory: []
+                        });
+                    } else if (data.type === 'agent_status') {
+                        const statusMap: Record<string, 'idle' | 'thinking' | 'working' | 'waiting' | 'done' | 'error'> = {
+                            'pending': 'idle',
+                            'running': 'working',
+                            'success': 'done',
+                            'error': 'error'
+                        };
+                        setAgentStatus(data.agent_id, statusMap[data.status] || data.status);
+                    } else if (data.type === 'agent_token') {
+                        appendToken(data.agent_id, data.token);
+                    } else if (data.type === 'agent_done') {
+                        setAgentStatus(data.agent_id, 'done');
+                    } else if (data.type === 'task_started') {
+                        updateAgent(data.agent_id, { currentTask: data.task_id });
+                    }
+                    // 'task_complete' is currently handled by projectStore but can be added here if needed
+
+                    // We shouldn't store every single token event in the events array because it will blow up memory quickly
+                    if (data.type !== 'agent_token') {
+                        setEvents((prev) => [...prev, data]);
+                        handleSocketEvent(data);
+                    }
                 }
             } catch (err) {
                 console.error('Error parsing WS message:', err);
@@ -77,7 +119,7 @@ export function useProjectSocket(projectId: string) {
         };
 
         wsRef.current = ws;
-    }, [projectId, handleSocketEvent]);
+    }, [projectId, handleSocketEvent, addAgent, setAgentStatus, appendToken, updateAgent]);
 
     const disconnect = useCallback(() => {
         if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
