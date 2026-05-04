@@ -15,7 +15,7 @@
    - Implement `backend/core/exceptions.py` with custom exception classes: `AgentException`, `CapacityExceededException`, `AllKeysExhaustedException`, `MemoryException`, `ProviderException`. Verify with `read_file`.
 
 6. **Backend Router & Error Handler Fixes**
-   - Update `backend/main.py` to route `auth.router`, `system.router`, `projects.router`, `agents.router`, `tasks.router`, `memory.router`, and `providers.router` under an `/api` prefix (except standard websocket routes). Add global exception handler. Add `GET /api/health` endpoint. Verify with `read_file`.
+   - Update `backend/main.py` to route `auth.router`, `system.router`, `projects.router`, etc., under an `/api` prefix (except standard websocket routes). Add global exception handler. Add `GET /api/health` endpoint. Verify with `read_file`.
 
 7. **Frontend Packages & Interceptor**
    - Install `axios` and `react-hot-toast` via `npm install axios react-hot-toast`. Verify with `cat package.json`.
@@ -27,23 +27,23 @@
 
 9. **Frontend Toast & Error Boundaries Setup**
    - Modify `frontend/src/app/layout.tsx` to wrap the app with `Toaster` component from `react-hot-toast`. Verify with `read_file`.
-   - Create `frontend/src/components/ErrorBoundary.tsx` and modify `frontend/src/app/layout.tsx` to wrap the `{children}` render block with the `<ErrorBoundary>` component. Verify with `read_file`.
+   - Create `frontend/src/components/ErrorBoundary.tsx` and modify `frontend/src/app/layout.tsx` to wrap major sections in React Error Boundaries. Verify with `read_file`.
 
 10. **Frontend Toast Triggers**
-    - Update `frontend/src/store/projectStore.ts` inside `handleSocketEvent` by adding `import toast from 'react-hot-toast';` and triggering `toast.success`, `toast.error`, and `toast('Task plan created...')` for events: `agent_spawned`, `error`, and `task_plan`. Also trigger `toast.success('Run complete')` when `session_state` has status `completed`. Verify with `read_file`.
-    - Update `frontend/src/components/settings/ApiKeyManager.tsx` by adding `toast.success('API key added successfully')` inside the `handleAddKey` function. Verify with `read_file`.
-    - Update `frontend/src/components/memory/KnowledgeBase.tsx` to add a "Compress Memory" button near the "Memory System" h2 header at line 188, which triggers a `toast.success('Memory compressed')` notification when clicked. Verify with `read_file`.
+    - Update `frontend/src/store/projectStore.ts` inside `handleSocketEvent` to trigger `toast` popups for events: Agent spawned, Agent error, Task plan created. Verify with `read_file`.
+    - Update `frontend/src/components/settings/ApiKeyManager.tsx` to show toast when an API key is successfully added. Verify with `read_file`.
+    - Update `frontend/src/components/memory/KnowledgeBase.tsx` to trigger toast on memory compressed. Verify with `read_file`.
 
 11. **Frontend Skeleton Components**
     - Create skeleton components in `frontend/src/components/ui/skeletons.tsx` (using `animate-pulse`): `AgentCardSkeleton`, `MessageThreadSkeleton`, `KnowledgeBaseSkeleton`. Verify with `read_file`.
 
 12. **Frontend WebSocket Reconnect**
-    - Update `frontend/src/lib/ws/useProjectSocket.ts` by adding `import toast from 'react-hot-toast';` and `toast.error('Connection lost. Reconnecting...')` inside the `ws.onclose` function where the reconnection backoff logic exists. Verify with `read_file`.
+    - Update `frontend/src/lib/ws/useProjectSocket.ts` to show "Reconnecting..." toast on disconnect and use exponential backoff for max 5 retries. Verify with `read_file`.
 
 13. **Frontend Keyboard Shortcuts**
     - Install `react-hotkeys-hook` via `npm install react-hotkeys-hook`. Verify with `cat package.json`.
     - Update `frontend/src/app/providers.tsx` to define global shortcuts using `useHotkeys` (Cmd+K, Cmd+Enter, Cmd+., Escape, Cmd+B, Cmd+Shift+M). Verify with `read_file`.
-    - Add tooltip hints (using `title` attribute) to the collapse button (which has text `&lt;&lt;` and `onClick={() => setCollapsed(true)}`) and `+ New Run` button in `frontend/src/components/layout/Sidebar.tsx` and `&gt;&gt;` button in `frontend/src/components/layout/RightSidebar.tsx`, and `Stop Run` in `frontend/src/components/layout/TopBar.tsx`. Verify with `read_file`.
+    - Add tooltip hints (using `title` or simple tooltip component) to buttons in `frontend/src/components/layout/TopBar.tsx`, `frontend/src/components/layout/Sidebar.tsx`, and `frontend/src/components/layout/RightSidebar.tsx`. Verify with `read_file`.
 
 14. **Frontend PWA Setup**
     - Install `next-pwa` via `npm install next-pwa`. Verify with `cat package.json`. Rename `frontend/next.config.mjs` to `frontend/next.config.js` and update for PWA support. Verify with `read_file`.
