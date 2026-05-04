@@ -1,29 +1,37 @@
-1. **Add `sentence-transformers` and `redis` to requirements:**
-   - Update `NeuralForge/backend/requirements.txt` to include `sentence-transformers` and any specific versions needed. Since it's lazy-loaded, we will add it.
+1. **Backend Authentication & Models**
+   - Add `hashed_password` to `User` model in `backend/models/models.py`.
+   - Update Alembic migrations for `hashed_password`.
+   - Create `backend/core/security.py` for hashing and JWT utilities.
+   - Create `backend/core/dependencies.py` for `get_current_user`.
+   - Implement `backend/routers/auth.py` for register, login, refresh, logout, me. Token storage via httpOnly cookies.
+   - Update `main.py` to route `auth.router` and others under `/api` prefix.
 
-2. **Update `database.py`:**
-   - Add initialization of ChromaDB and Redis clients alongside SQLAlchemy.
+2. **Backend Error Handling & Health Check**
+   - Create `backend/core/exceptions.py` with custom exceptions.
+   - Add global exception handler in `main.py`.
+   - Add `GET /api/health` endpoint in `main.py`.
 
-3. **Implement `Embedding Service` (`backend/services/embedder.py`):**
-   - Create class with `embed` method.
-   - Lazy load `sentence-transformers` model `all-MiniLM-L6-v2`.
-   - Fallback to ChromaDB's default embedding if unavailable.
+3. **Frontend API & Auth Pages**
+   - Create `frontend/src/lib/axios.ts` with interceptors (401 refresh, 429 toast, 503 banner).
+   - Implement `frontend/src/app/(auth)/login/page.tsx` and `frontend/src/app/(auth)/register/page.tsx`.
+   - Install `react-hot-toast` and implement toast notification system.
 
-4. **Implement `Memory Manager` (`backend/services/memory_manager.py`):**
-   - Implements 3 memory tiers: Working Memory (Redis), Episodic Memory (ChromaDB `episodes_{project_id}`), and Knowledge Base (ChromaDB `knowledge_{project_id}`).
-   - Implement `store_episode`, `retrieve_relevant`, `build_memory_context`, `add_knowledge`, `compress_memory`, `set_working_context`, `get_working_context`, `store_task_result`, `get_task_result`, `clear_project_memory`.
+4. **Frontend Skeletons & WebSocket Reconnect**
+   - Create Skeletons using Tailwind `animate-pulse` (AgentCard, MessageThread, KnowledgeBase).
+   - Implement WebSocket reconnection logic with exponential backoff.
 
-5. **Implement REST endpoints (`backend/routers/memory.py`):**
-   - Create endpoints for `episodes`, `knowledge`, `search`, `compress`, `clear`.
-   - Wire them to FastAPI via DI (dependency injection).
+5. **Frontend Keyboard Shortcuts & PWA**
+   - Install/implement `useHotkeys` (or `react-hotkeys-hook`) for global shortcuts. Add tooltips.
+   - Add `next-pwa` to `next.config.mjs`, create `manifest.json`, generate SVG icons, create offline fallback page.
+   - Create Status dashboard `frontend/src/app/status/page.tsx`.
 
-6. **Update `main.py`:**
-   - Initialize `MemoryManager` as a singleton in the FastAPI `lifespan` context.
-   - Wire it up appropriately.
+6. **Production Dockerfiles & CI/CD**
+   - Create `frontend/Dockerfile` and `backend/Dockerfile` (multi-stage).
+   - Create `docker-compose.prod.yml` and `nginx/nginx.conf`.
+   - Create `.github/workflows/ci.yml`.
 
-7. **Frontend Implementation (`frontend/src/components/memory/KnowledgeBase.tsx`):**
-   - Implement the memory UI component with split view (Episodes tab + Knowledge tab).
-   - Add semantic search capabilities and buttons to manually add/delete knowledge.
+7. **Documentation**
+   - Complete `README.md` with instructions, architecture, env vars, etc.
 
-8. **Pre-commit checks:**
-   - Verify that all code changes follow project conventions. Run pre-commit instructions.
+8. **Pre-commit Steps**
+   - Run `pre_commit_instructions` and fix any issues to ensure the codebase passes all checks.
